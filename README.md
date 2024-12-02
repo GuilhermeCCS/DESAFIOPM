@@ -1,7 +1,18 @@
-
 # Desafio Django - Scraping e Armazenamento no Banco de Dados
 
-Este projeto utiliza Django para realizar scraping de editais de licitação através da API do portal PNCP (Sistema de Compras Governamentais) e armazena os dados no banco de dados SQLite.
+Este projeto utiliza Django para realizar scraping de editais de licitação através da API do portal **PNCP (Sistema de Compras Governamentais)** e armazena os dados no banco de dados SQLite.
+
+## Justificativa pela Escolha da Fonte de Dados: PNCP
+
+Entre as três opções de fontes de dados fornecidas (SETOP, CAIXA e PNCP), a **PNCP** foi escolhida para este projeto pelas seguintes razões:
+
+1. **Amplo Conjunto de Dados**: O PNCP oferece uma vasta quantidade de dados atualizados sobre editais e licitações, abrangendo uma grande variedade de informações de diferentes órgãos públicos. Isso permite um conjunto de dados mais robusto e completo.
+
+2. **Estrutura de Dados Acessível**: O portal PNCP disponibiliza informações de maneira mais organizada e estruturada, facilitando o processo de raspagem com ferramentas como BeautifulSoup e Requests, ao contrário de fontes como a SETOP, que exigem extração de dados a partir de arquivos de planilhas, o que demandaria mais processamento.
+
+3. **Relevância e Atualizações Frequentes**: O PNCP é constantemente atualizado e centraliza dados de licitações de diversas entidades governamentais. Isso garante que os dados extraídos são relevantes e em tempo real, permitindo que a aplicação se mantenha útil e atualizada.
+
+Dessa forma, a escolha do **PNCP** oferece maior flexibilidade e escalabilidade ao projeto, com dados acessíveis, estruturados e de fácil raspagem.
 
 ## Requisitos
 
@@ -35,12 +46,12 @@ Ative o ambiente virtual:
 
 - **Windows**:
   ```bash
-  .\env\Scripts\activate
+  .\venv\Scripts\activate
   ```
 
 - **Linux/macOS**:
   ```bash
-  source env/bin/activate
+  source venv/bin/activate
   ```
 
 ### 3. Instalando as Dependências
@@ -84,54 +95,7 @@ Abra o navegador e acesse `http://127.0.0.1:8000/` para visualizar a aplicação
 Para rodar o comando de scraping que irá buscar os dados da API do PNCP e salvar no banco de dados, use o seguinte comando:
 
 ```bash
-python manage.py <nome_do_comando>
+python manage.py iniciar_projeto
 ```
 
 O nome do comando é o nome da classe dentro de `scraping_app/management/commands/`, geralmente algo como `scrape_edital.py` ou o que você escolheu ao implementar a função `BaseCommand`.
-
-### 8. Testando a Aplicação
-
-Depois de rodar o scraping, os dados serão armazenados na tabela `ServicoSetop` do banco de dados. Você pode verificar os dados no Django Admin ou usar o shell do Django:
-
-```bash
-python manage.py shell
-```
-
-No shell interativo, você pode consultar os dados:
-
-```python
-from scraping_app.models import ServicoSetop
-ServicoSetop.objects.all()
-```
-
-## Estrutura do Projeto
-
-O projeto tem a seguinte estrutura de diretórios:
-
-```
-projeto/
-│
-├── manage.py              # Script principal para rodar o Django
-├── scraping_app/          # Aplicação de scraping
-│   ├── management/
-│   │   └── commands/      # Comandos personalizados de scraping
-│   ├── models.py          # Modelos do banco de dados
-│   ├── views.py           # Visões da aplicação
-│   ├── urls.py            # URLs da aplicação
-│   └── admin.py           # Configurações do admin do Django
-│
-├── requirements.txt       # Dependências do projeto
-└── db.sqlite3             # Banco de dados SQLite (gerado automaticamente pelo Django)
-```
-
-## Contribuindo
-
-1. Faça um fork deste repositório.
-2. Crie uma branch para suas mudanças (`git checkout -b feature/nome-da-sua-feature`).
-3. Faça as alterações necessárias e commit (`git commit -am 'Adicionando nova funcionalidade'`).
-4. Faça o push para a sua branch (`git push origin feature/nome-da-sua-feature`).
-5. Abra um pull request.
-
-## Licença
-
-Este projeto é licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
