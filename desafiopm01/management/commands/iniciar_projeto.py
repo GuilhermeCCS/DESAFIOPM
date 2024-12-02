@@ -13,12 +13,14 @@ HEADERS = {
 }
 
 params = {
+    "q": "abc",
     "tipos_documento": "edital",
     "ordenacao": "-data",
     "pagina": "1",
     "tam_pagina": "10",
-    "status": "recebendo_proposta"
+    "status": "encerrado",
 }
+
 
 class Command(BaseCommand):
     help = 'Inicia o scraping e salva os dados no banco de forma contínua com pausa de 1 minuto entre execuções'
@@ -37,8 +39,7 @@ class Command(BaseCommand):
                 continue
 
             data = response.json()
-
-            print("JSON retornado da API:", data)  
+            print("JSON retornado da API:", data)
 
             items_data = data.get('items', [])
 
@@ -49,6 +50,11 @@ class Command(BaseCommand):
 
             for item_data in items_data:
                 print("Dados completos de uma licitação:", item_data)
+
+                if not self.is_encerrado(item_data):
+                    self.stdout.write(f"Licitação '{item_data.get('description')}' não está encerrada.")
+                    continue
+
                 self.process_item(item_data)
 
             pagina_atual += 1
@@ -63,12 +69,12 @@ class Command(BaseCommand):
         }
 
         print("Verificando a existência de itens nesta licitação...")
-        
+
         itens = item_data.get('itens', [])
-        
+
         if not itens:
             self.stdout.write(f"Licitação '{licitacao_info['objeto']}' não possui itens.")
-            print("Estrutura de dados da licitação sem itens:", item_data)  
+            print("Estrutura de dados da licitação sem itens:", item_data)
             return
 
         for item in itens:
@@ -90,6 +96,18 @@ class Command(BaseCommand):
             )
 
             self.stdout.write(f"Licitação '{licitacao_info['objeto']}' e item '{item_info['descricao']}' salvos com sucesso!")
+
+    def is_encerrado(self, item_data):
+        status = item_data.get('status', '')
+        if status == 'encerrado':
+            return True
+
+        data_encerramento = item_data.get('data_encerramento')
+        if data_encerramento:
+            data_encerramento = datetime.strptime(data_encerramento, "%Y-%m-%dT%H:%M:%S.%f")
+            if data_encerramento < datetime.now():
+                return True
+        return False
 
     def valid_date(self, date_value):
         if date_value == "Data não informada" or not date_value:
