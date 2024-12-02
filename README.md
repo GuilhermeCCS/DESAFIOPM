@@ -39,7 +39,7 @@ cd repositorio
 Crie um ambiente virtual para isolar as dependências do projeto:
 
 ```bash
-python -m venv env
+python -m venv venv
 ```
 
 Ative o ambiente virtual:
