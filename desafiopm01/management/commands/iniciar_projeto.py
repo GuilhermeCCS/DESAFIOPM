@@ -54,33 +54,27 @@ class Command(BaseCommand):
                     self.stdout.write(f"Licitação '{item_data.get('description')}' não está encerrada.")
                     continue
 
-                licitacao_url = item_data.get('url')  # Aqui estamos pegando a URL da licitação
+                licitacao_url = item_data.get('item_url')  
                 if licitacao_url:
-                    self.extract_and_save_licitacao_details(licitacao_url)
+                    self.extract_and_save_licitacao_items(licitacao_url)
 
             pagina_atual += 1
             self.stdout.write("Aguardando 1 minuto para a próxima página...")
             time.sleep(60)
 
-    def extract_and_save_licitacao_details(self, licitacao_url):
-        # Faz a requisição para a página de detalhes da licitação
-        licitacao_response = requests.get(licitacao_url, headers=HEADERS)
-        
+    def extract_and_save_licitacao_items(self, item_url):
+        full_url = f"https://pncp.gov.br{item_url}"  
+        licitacao_response = requests.get(full_url, headers=HEADERS)
+
         if licitacao_response.status_code != 200:
-            self.stdout.write(f"Erro ao acessar os detalhes da licitação. Status: {licitacao_response.status_code}")
+            self.stdout.write(f"Erro ao acessar os detalhes dos itens. Status: {licitacao_response.status_code}")
             return
 
-        licitacao_data = licitacao_response.json()  # Supondo que a resposta seja em JSON
-        
+        licitacao_data = licitacao_response.json()  
         itens = licitacao_data.get('itens', [])
-        licitacao_info = {
-            'objeto': licitacao_data.get('description', 'Descrição não disponível'),
-            'modalidade': licitacao_data.get('modalidade', 'Modalidade não informada'),
-            'comprador': licitacao_data.get('orgao_nome', 'Comprador não informado'),
-        }
 
         if not itens:
-            self.stdout.write(f"Licitação '{licitacao_info['objeto']}' não possui itens.")
+            self.stdout.write(f"Licitação não possui itens.")
             return
 
         for item in itens:
@@ -92,15 +86,16 @@ class Command(BaseCommand):
             }
 
             Itens.objects.create(
-                descricao_licitacao=licitacao_info['objeto'],
-                modalidade=licitacao_info['modalidade'],
-                comprador=licitacao_info['comprador'],
+                descricao_licitacao=item_info['descricao'],  
+                modalidade='',  
+                comprador='',  
                 descricao_item=item_info['descricao'],
+                unidade='',  
                 quantidade=item_info['quantidade'],
                 valor=item_info['valor_unitario'],
             )
 
-            self.stdout.write(f"Licitação '{licitacao_info['objeto']}' e item '{item_info['descricao']}' salvos com sucesso!")
+            self.stdout.write(f"Item '{item_info['descricao']}' salvo com sucesso!")
 
     def is_encerrado(self, item_data):
         status = item_data.get('status', '')
