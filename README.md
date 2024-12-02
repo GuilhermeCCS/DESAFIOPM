@@ -97,5 +97,3 @@ Para rodar o comando de scraping que irá buscar os dados da API do PNCP e salva
 ```bash
 python manage.py iniciar_projeto
 ```
-
-O nome do comando é o nome da classe dentro de `scraping_app/management/commands/`, geralmente algo como `scrape_edital.py` ou o que você escolheu ao implementar a função `BaseCommand`.
