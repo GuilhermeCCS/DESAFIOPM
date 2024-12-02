@@ -4,7 +4,6 @@ from desafiopm01.models import Itens
 from datetime import datetime
 from django.utils import timezone
 
-# Definir URL e cabeçalhos
 URL = "https://pncp.gov.br/api/search/"
 HEADERS = {
     "sec-ch-ua-platform": '',
@@ -35,7 +34,6 @@ class Command(BaseCommand):
             self.stdout.write(f"Processando página {params['pagina']}...")
             response = requests.get(URL, headers=HEADERS, params=params)
             
-            # Imprimir resposta completa da API para visualização
             data = response.json()
             print(data)  
 
