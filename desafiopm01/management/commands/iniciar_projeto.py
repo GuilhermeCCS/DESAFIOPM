@@ -1,6 +1,6 @@
 import requests
 from django.core.management.base import BaseCommand
-from desafiopm01.models import Itens  # Certifique-se de que está importando o modelo correto
+from desafiopm01.models import Itens  
 from datetime import datetime
 from django.utils import timezone
 
@@ -26,7 +26,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         total_items = self.get_total_items()
         self.stdout.write(f"Total de itens: {total_items}")
-        interval = 5  # Processar 5 páginas
+        interval = 10 
 
         for i in range(interval):
             if i > 0:
@@ -37,7 +37,7 @@ class Command(BaseCommand):
             
             # Imprimir resposta completa da API para visualização
             data = response.json()
-            print(data)  # Visualizar estrutura JSON
+            print(data)  
 
             items_data = data.get('items', [])
             if not items_data:
@@ -52,7 +52,6 @@ class Command(BaseCommand):
         return response.json()['total']
 
     def process_item(self, item_data):
-        # Coletar informações principais da licitação
         licitacao_info = {
             'objeto': item_data.get('description', 'Descrição não disponível'),
             'modalidade': item_data.get('modalidade', 'Modalidade não informada'),
