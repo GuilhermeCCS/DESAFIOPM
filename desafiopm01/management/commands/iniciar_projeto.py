@@ -18,7 +18,7 @@ params = {
     "ordenacao": "-data",
     "pagina": "1",
     "tam_pagina": "10",
-    "status": "encerrado",
+    "status": "encerradas",
 }
 
 class Command(BaseCommand):
@@ -41,7 +41,6 @@ class Command(BaseCommand):
             print("JSON retornado da API:", data)
 
             items_data = data.get('items', [])
-
             if not items_data:
                 self.stdout.write(f"Nenhum item encontrado na página {pagina_atual}")
                 time.sleep(60)
@@ -49,62 +48,74 @@ class Command(BaseCommand):
 
             for item_data in items_data:
                 print("Dados completos de uma licitação:", item_data)
-
-                if not self.is_encerrado(item_data):
-                    self.stdout.write(f"Licitação '{item_data.get('description')}' não está encerrada.")
-                    continue
-
-                licitacao_url = item_data.get('item_url')  
-                if licitacao_url:
-                    self.extract_and_save_licitacao_items(licitacao_url)
+                self.process_item(item_data)
 
             pagina_atual += 1
             self.stdout.write("Aguardando 1 minuto para a próxima página...")
             time.sleep(60)
 
-    def extract_and_save_licitacao_items(self, item_url):
-        full_url = f"https://pncp.gov.br{item_url}"  
-        licitacao_response = requests.get(full_url, headers=HEADERS)
+    def process_item(self, item_data):
+        licitacao_info = {
+            'objeto': item_data.get('description', 'Descrição não disponível'),
+            'modalidade': item_data.get('modalidade', 'Modalidade não informada'),
+            'comprador': item_data.get('orgao_nome', 'Comprador não informado'),
+            'orgao_cnpj': item_data.get('orgao_cnpj', 'CNPJ não informado'),
+            'numero_sequencial': item_data.get('numero_sequencial', 'Número sequencial não informado'),
+            'ano': item_data.get('ano', 'Ano não informado'),
+        }
 
-        if licitacao_response.status_code != 200:
-            self.stdout.write(f"Erro ao acessar os detalhes dos itens. Status: {licitacao_response.status_code}")
+        print("Verificando a existência de itens nesta licitação...")
+
+        # Verifique se o número sequencial e o ano estão presentes
+        if not licitacao_info['numero_sequencial'] or not licitacao_info['ano']:
+            self.stdout.write(f"Licitação '{licitacao_info['objeto']}' não possui informações completas para acessar os itens.")
             return
 
-        licitacao_data = licitacao_response.json()  
-        itens = licitacao_data.get('itens', [])
+        # Construa a URL para pegar os itens da licitação
+        itens_url = f"https://pncp.gov.br/api/pncp/v1/orgaos/{licitacao_info['orgao_cnpj']}/compras/{licitacao_info['ano']}/{licitacao_info['numero_sequencial']}/itens?pagina=1&tamanhoPagina=5"
+        response_itens = requests.get(itens_url, headers=HEADERS)
 
-        if not itens:
-            self.stdout.write(f"Licitação não possui itens.")
+        if response_itens.status_code != 200:
+            self.stdout.write(f"Erro ao acessar os itens da licitação '{licitacao_info['numero_sequencial']}'. Status: {response_itens.status_code}")
             return
 
-        for item in itens:
+        itens_data = response_itens.json()
+
+        # Caso a resposta seja uma lista diretamente, usamos ela
+        if isinstance(itens_data, list):
+            print(f"Recebidos {len(itens_data)} itens para a licitação.")
+        else:
+            self.stdout.write(f"Erro: Estrutura de dados inesperada ao tentar acessar os itens.")
+            return
+
+        for item in itens_data:
             item_info = {
+                'numero_item': item.get('numeroItem', 'Número do item não informado'),
                 'descricao': item.get('descricao', 'Descrição não disponível'),
                 'quantidade': item.get('quantidade', 'Quantidade não informada'),
-                'valor_unitario': item.get('valor_unitario_estimado', 'Valor unitário não informado'),
-                'valor_total': item.get('valor_total_estimado', 'Valor total não informado')
+                'valor_unitario_estimado': item.get('valorUnitarioEstimado', 'Valor unitário não informado'),
+                'valor_total_estimado': item.get('valorTotal', 'Valor total não informado'),
+                'unidade_medida': item.get('unidadeMedida', 'Unidade não informada')
             }
 
             Itens.objects.create(
-                descricao_licitacao=item_info['descricao'],  
-                modalidade='',  
-                comprador='',  
+                descricao_licitacao=licitacao_info['objeto'],
+                modalidade=licitacao_info['modalidade'],
+                comprador=licitacao_info['comprador'],
                 descricao_item=item_info['descricao'],
-                unidade='',  
+                unidade=item_info['unidade_medida'],
                 quantidade=item_info['quantidade'],
-                valor=item_info['valor_unitario'],
+                valor=item_info['valor_unitario_estimado'],
             )
 
-            self.stdout.write(f"Item '{item_info['descricao']}' salvo com sucesso!")
+            self.stdout.write(f"Licitação '{licitacao_info['objeto']}' e item '{item_info['descricao']}' salvos com sucesso!")
 
-    def is_encerrado(self, item_data):
-        status = item_data.get('status', '')
-        if status == 'encerrado':
-            return True
-
-        data_encerramento = item_data.get('data_encerramento')
-        if data_encerramento:
-            data_encerramento = datetime.strptime(data_encerramento, "%Y-%m-%dT%H:%M:%S.%f")
-            if data_encerramento < datetime.now():
-                return True
-        return False
+    def valid_date(self, date_value):
+        if date_value == "Data não informada" or not date_value:
+            return None
+        try:
+            naive_date = datetime.strptime(date_value, "%Y-%m-%dT%H:%M:%S.%f")
+            aware_date = timezone.make_aware(naive_date, timezone.get_current_timezone())
+            return aware_date
+        except ValueError:
+            return None
