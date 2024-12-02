@@ -57,7 +57,7 @@ class Command(BaseCommand):
     def process_item(self, item_data):
         licitacao_info = {
             'objeto': item_data.get('description', 'Descrição não disponível'),
-            'modalidade': item_data.get('modalidade', 'Modalidade não informada'),
+            'modalidade': item_data.get('modalidade_licitacao_nome', 'Modalidade não informada'), 
             'comprador': item_data.get('orgao_nome', 'Comprador não informado'),
             'orgao_cnpj': item_data.get('orgao_cnpj', 'CNPJ não informado'),
             'numero_sequencial': item_data.get('numero_sequencial', 'Número sequencial não informado'),
@@ -66,12 +66,10 @@ class Command(BaseCommand):
 
         print("Verificando a existência de itens nesta licitação...")
 
-        # Verifique se o número sequencial e o ano estão presentes
         if not licitacao_info['numero_sequencial'] or not licitacao_info['ano']:
             self.stdout.write(f"Licitação '{licitacao_info['objeto']}' não possui informações completas para acessar os itens.")
             return
 
-        # Construa a URL para pegar os itens da licitação
         itens_url = f"https://pncp.gov.br/api/pncp/v1/orgaos/{licitacao_info['orgao_cnpj']}/compras/{licitacao_info['ano']}/{licitacao_info['numero_sequencial']}/itens?pagina=1&tamanhoPagina=5"
         response_itens = requests.get(itens_url, headers=HEADERS)
 
@@ -81,7 +79,6 @@ class Command(BaseCommand):
 
         itens_data = response_itens.json()
 
-        # Caso a resposta seja uma lista diretamente, usamos ela
         if isinstance(itens_data, list):
             print(f"Recebidos {len(itens_data)} itens para a licitação.")
         else:
@@ -100,7 +97,7 @@ class Command(BaseCommand):
 
             Itens.objects.create(
                 descricao_licitacao=licitacao_info['objeto'],
-                modalidade=licitacao_info['modalidade'],
+                modalidade=licitacao_info['modalidade'],  
                 comprador=licitacao_info['comprador'],
                 descricao_item=item_info['descricao'],
                 unidade=item_info['unidade_medida'],
