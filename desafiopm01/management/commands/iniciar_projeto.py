@@ -21,7 +21,6 @@ params = {
     "status": "encerrado",
 }
 
-
 class Command(BaseCommand):
     help = 'Inicia o scraping e salva os dados no banco de forma contínua com pausa de 1 minuto entre execuções'
 
@@ -108,13 +107,3 @@ class Command(BaseCommand):
             if data_encerramento < datetime.now():
                 return True
         return False
-
-    def valid_date(self, date_value):
-        if date_value == "Data não informada" or not date_value:
-            return None
-        try:
-            naive_date = datetime.strptime(date_value, "%Y-%m-%dT%H:%M:%S.%f")
-            aware_date = timezone.make_aware(naive_date, timezone.get_current_timezone())
-            return aware_date
-        except ValueError:
-            return None
